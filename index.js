@@ -35,7 +35,6 @@ const bot = new Discord.Client({
 });
 
 bot.on("messageCreate", async (message) => {
-  console.log(message);
   if (message.channel.id === "1232805994615017552" && message.author.id !== '678621201177772054' && !message.author.bot) {
     try {
       const member = await message.guild.members.fetch(message.author.id);
@@ -60,31 +59,30 @@ bot.on("messageCreate", async (message) => {
         // React to the message
         message.react("😡");
         member.send(`Number of offences: ${messageOffenders[message.author.id]}`);
-        member.send(`You will be muted for: ${messageOffenders[message.author.id] * 60} seconds`);
+        member.send(`You will be muted for: ${messageOffenders[message.author.id] * 30 * 2} seconds`);
 
         setTimeout(async () =>{
           await member.roles.remove(mutedRole);
           await member.roles.add(oldRoles);
           await member.send("I have returned your roles! Please don't do it again.")
           
-        }, 60000 * messageOffenders[message.author.id]);
+        }, 30000 * messageOffenders[message.author.id] * 2);
       }
     } catch (error) {
       console.error('Error fetching member or timing out:', error);
     }
   } else if (message.content === "ping") {
     message.channel.send("pong!");
-  } else if (message.content.toLowerCase() === "ezz" || message.content.toLowerCase() === "ez") {
-    message.channel.send("Hreme!");
-  }
+  } else if (message.content === "pong") {
+    message.channel.send("ping!");
+  } 
 });
 
 
-bot.on("guildAuditLogEntryCreate", action=>{
-  console.log(action);
+bot.on("guildAuditLogEntryCreate", async(action)=>{
   if(action.action === 27){
-    const member = action.guild.members.cache.get(action.target.id);
-    member.voice.moveChannel(null);
+    const member = await bot.guilds.cache.get("706582735426420757").members.fetch(action.executorId);
+    await member.voice.setChannel(null);
     
     member.send("You have been removed for being a hreme");
   }
