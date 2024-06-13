@@ -6,6 +6,8 @@ const server = http.createServer((req, res) => {
   res.end('ok');
 });
 
+const messageOffenders = {};
+
 const bot = new Discord.Client({
   intents: [
     Discord.GatewayIntentBits.Guilds,
@@ -32,9 +34,59 @@ const bot = new Discord.Client({
   ]
 });
 
-bot.on("messageCreate", message=>{
-  if (message.content === "ping"){
-    message.channel.send("pong!")
+bot.on("messageCreate", async (message) => {
+  console.log(message);
+  if (message.channel.id === "1232805994615017552" && message.author.id !== '678621201177772054' && !message.author.bot) {
+    try {
+      const member = await message.guild.members.fetch(message.author.id);
+      let mutedRole = message.guild.roles.cache.find(role => role.name === "Muted");
+
+      if (member) {
+        message.author.send("You have been muted for sending messages in the improper channel");
+        messageOffenders[message.author.id] = (messageOffenders[message.author.id] || 0) + 1;
+
+        if (!mutedRole) {
+          mutedRole = await message.guild.roles.create({
+            name: 'Muted',
+            permissions: []
+          });
+        }
+
+        // Add the muted role to the member
+        const oldRoles = member.roles.cache;
+        await member.roles.remove(member.roles.cache);
+        await member.roles.add(mutedRole);
+
+        // React to the message
+        message.react("😡");
+        member.send(`Number of offences: ${messageOffenders[message.author.id]}`);
+        member.send(`You will be muted for: ${messageOffenders[message.author.id] * 60} seconds`);
+
+        setTimeout(async () =>{
+          await member.roles.remove(mutedRole);
+          await member.roles.add(oldRoles);
+          await member.send("I have returned your roles! Please don't do it again.")
+          
+        }, 60000 * messageOffenders[message.author.id]);
+      }
+    } catch (error) {
+      console.error('Error fetching member or timing out:', error);
+    }
+  } else if (message.content === "ping") {
+    message.channel.send("pong!");
+  } else if (message.content.toLowerCase() === "ezz" || message.content.toLowerCase() === "ez") {
+    message.channel.send("Hreme!");
+  }
+});
+
+
+bot.on("guildAuditLogEntryCreate", action=>{
+  console.log(action);
+  if(action.action === 27){
+    const member = action.guild.members.cache.get(action.target.id);
+    member.voice.moveChannel(null);
+    
+    member.send("You have been removed for being a hreme");
   }
 });
 
